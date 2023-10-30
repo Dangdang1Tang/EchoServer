@@ -1,0 +1,13 @@
+*.o
+.vscode/*
+
+#忽略所有文件和目录
+*
+#增加指定扩展名文件和MAKEFILE文件
+!*.cpp
+!*.c
+!*.h
+!makefile
+ 
+#当前目录下需要提交的文件                                                                                                                                                  
+!README.md
