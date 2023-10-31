@@ -7,13 +7,6 @@
 #include <errno.h>
 #include <string.h>
 
-
-/*
-#define ERR_EXIT(m) \
-    perror(m);  \
-    exit(EXIT_FAILURE);
-*/
-
 #define ERR_EXIT(m) \
     do  \
     {   \
@@ -24,15 +17,14 @@
 int main()
 {
     int fd = 0;
-    fd = open("test.txt", O_RDONLY);
-    
-    if (fd==-1)
+    umask(0);
+    fd = open("test.txt", O_WRONLY | O_CREAT, 0666);
+    if (fd == -1)
     {
-        //fprintf(stderr,"open error with errno=%d, %s\n", errno, strerror(errno));
-        //exit(EXIT_FAILURE);
         ERR_EXIT("open error");
     }
     printf("open success!\n");
+    close(fd);
     return 0;
 
 }
