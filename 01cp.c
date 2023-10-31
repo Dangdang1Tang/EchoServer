@@ -38,7 +38,9 @@ int main(int argc, char *argv[])
     int nread;
     while ((nread = read(infd, inbuf, 1024)) > 0)
     {
-        write(outfd, inbuf, nread)
+        write(outfd, inbuf, nread);
     }
+    close(infd);
+    close(outfd);
     return 0;
 }
