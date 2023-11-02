@@ -23,16 +23,26 @@ int main(int argc, char* argv[])
     lock.l_start = 0;           //偏移量
     lock.l_len = 0;             //锁多少字节，0表示全部
 
-    if (fcntl(fd, F_SETLK, &lock) == 0)
+    //if (fcntl(fd, F_SETLK, &lock) == 0)
+    if (fcntl(fd, F_SETLKW, &lock) == 0)    //带W的加锁，如果不能获得锁，就会阻塞直到拿到锁
     {
         printf("lock success\n");
+        printf("press any key to unlock\n");
+        getchar();
+        lock.l_type = F_UNLCK;
+        if (fcntl(fd, F_UNLCK, &lock) == 0)
+        {
+            printf("unlock success");
+        }
+        else
+        {
+            perror("unlock error");
+        }
     }
     else
     {
         perror("lock fail");
         exit(EXIT_FAILURE);
-    }
-
-    
+    }   
     return 0;
 }
