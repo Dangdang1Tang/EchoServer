@@ -7,12 +7,13 @@
 #include <errno.h>
 #include <string.h>
 
+//宏写成这样是因为：1.宏不能有多条语句 2.把宏的内容包起来，防止被上下文分割，比如if
 #define ERR_EXIT(m) \
     do  \
     {   \
         perror(m);  \
         exit(EXIT_FAILURE); \
-    } while(0);
+    } while(0)
     
 int main(int argc, char *argv[])
 {
