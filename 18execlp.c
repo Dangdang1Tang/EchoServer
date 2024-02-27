@@ -55,6 +55,6 @@ int main(int argc, char* argv[])
     {
         perror("execlp error");
     }
-    printf("Exiting main ...\n");
+    printf("Exiting main ...\n");   //只有替换失败了会走这句,否则不会走到这里
     return 0;
 }
