@@ -1,21 +1,3 @@
-/*
-服务器多进程，父进程接收连接，返回一个连接给子进程管理，然后父进程继续接受连接。
-出现僵尸进程：
-当客户端断开连接后，服务器管理这个连接的子进程退出，如果父进程没有处理SIGCHLD，这个子进程就会变成僵尸进程。
-解决：
-signal(SIGCHLD, SIG_IGN); 告诉内核不关系子进程的退出，内核会自动回收。
-signal(SIGCHLD, handle_sigchld); 绑定回调处理函数，可以用wait查询子进程退出状态
-
-用wait解决僵尸进程依然可能有问题，如果有多个子进程同时退出，wait不能等待所有子进程的退出，因为它等待第一个子进程就返回了。
-这里应该跟收到几个SIGCHLD没关系，可能好几次处理都在第一个返回了。
-解决：
-用waitpid （其实和wait没本质区别？都要用while循环处理才能处理全部？）
-
-5个子进程退出，向父进程发了5个SIGCHLD信号，但由于是不可靠信号，所以父进程只收到了一个或者两个，所以就算用waitpid也会有僵尸进程。
-解决：
-while处理
-*/
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -159,7 +141,7 @@ void echo_srv(int conn)
 
 void handle_sigchld(int sig)
 {
-/*	wait(NULL);*/      //这里不关心更多状态，所以传了NULL
+/*	wait(NULL);*/
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
 }
@@ -191,9 +173,10 @@ int main(void)
 		ERR_EXIT("listen");
 
 	struct sockaddr_in peeraddr;
-	socklen_t peerlen = sizeof(peeraddr);
+	socklen_t peerlen;	
 	int conn;
 
+/*
 	pid_t pid;
 	while (1)
 	{
@@ -214,6 +197,97 @@ int main(void)
 		else
 			close(conn);
 	}
-	
+*/
+
+	int i;
+	int client[FD_SETSIZE];
+	int maxi = 0;
+
+	for (i=0; i<FD_SETSIZE; i++)
+		client[i] = -1;
+
+	int nready;
+	int maxfd = listenfd;
+	fd_set rset;
+	fd_set allset;
+	FD_ZERO(&rset);
+	FD_ZERO(&allset);
+	FD_SET(listenfd, &allset);
+	while (1)
+	{
+		rset = allset;
+		nready = select(maxfd+1, &rset, NULL, NULL, NULL);
+		if (nready == -1)
+		{
+			if (errno == EINTR)
+				continue;
+			
+			ERR_EXIT("select");
+		}
+		if (nready == 0)
+			continue;
+
+		if (FD_ISSET(listenfd, &rset))
+		{
+			peerlen = sizeof(peeraddr);
+			conn = accept(listenfd, (struct sockaddr*)&peeraddr, &peerlen);
+			if (conn == -1)
+				ERR_EXIT("accept");
+
+			for (i=0; i<FD_SETSIZE; i++)
+			{
+				if (client[i] < 0)
+				{
+					client[i] = conn;
+					if (i > maxi)
+						maxi = i;
+					break;
+				}
+			}
+
+			if (i == FD_SETSIZE)
+			{
+				fprintf(stderr, "too many clients\n");
+				exit(EXIT_FAILURE);
+			}
+			printf("ip=%s port=%d\n", inet_ntoa(peeraddr.sin_addr), ntohs(peeraddr.sin_port));
+			
+			FD_SET(conn, &allset);
+			if (conn > maxfd)
+				maxfd = conn;
+
+			if (--nready <= 0)
+				continue;
+
+		}
+
+		for (i=0; i<=maxi; i++)
+		{
+			conn = client[i];
+			if (conn == -1)
+				continue;
+
+			if (FD_ISSET(conn, &rset))
+			{
+				char recvbuf[1024] = {0};
+				int ret = readline(conn, recvbuf, 1024);
+                		if (ret == -1)
+                        		ERR_EXIT("readline");
+                		if (ret == 0)
+                		{
+                        		printf("client close\n");
+					FD_CLR(conn, &allset);
+					client[i] = -1;
+                		}
+
+                		fputs(recvbuf, stdout);
+                		writen(conn, recvbuf, strlen(recvbuf));
+
+				if (--nready <= 0)
+					break;
+				
+			}
+		}
+	}	
 	return 0;
 }
