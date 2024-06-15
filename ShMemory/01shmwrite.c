@@ -8,6 +8,17 @@ ipcs 命令的常用选项
 -s：显示信号量的信息。
 -a：显示所有可用的 IPC 资源信息（这是默认选项）。
 
+
+ipcrm
+用于删除 System V IPC（Inter-Process Communication，进程间通信）对象，包括共享内存段、消息队列和信号量。
+ipcrm -m shmid
+ipcrm -q msqid
+ipcrm -s semid
+
+ipcrm -M shmkey
+ipcrm -Q msqkey
+ipcrm -S semkey
+
 shmget：创建共享内存
 
 shmat：将共享内存段连接到进程地址空间
