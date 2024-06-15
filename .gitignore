@@ -9,6 +9,7 @@
 !Shell
 !Socket
 !MsgQueue
+!ShMemory
 
 #当前目录下需要提交的文件                                                                                                                                                  
 !README.md

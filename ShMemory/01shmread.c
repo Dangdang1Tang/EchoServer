@@ -35,7 +35,8 @@ int main(int argc, char* argv[])
         perror("shmat");
         exit(EXIT_FAILURE);
     }
-    //printf("name=%s,age=%d\n",p->name, p->age);
+    printf("name=%s,age=%d\n",p->name, p->age);
+    memcpy(p, "quit", 4);
     shmdt(p);
     return 0;
 }
